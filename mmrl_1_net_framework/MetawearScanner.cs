@@ -6,17 +6,17 @@ using System.Linq;
 
 namespace mmrl_1_net_framework
 {
-    class MetawearScanner
+    class MetaWearScanner
     {
         /// <summary>
-        /// Devices which have already been encountered will be remembered and only listed once.
+        /// MAC addresses of the MetaWear boards. Each board is listed only once.
         /// </summary>
-        private HashSet<ulong> _seenDeviceMacAddresses;
+        public HashSet<ulong> ScanResults { get; private set; }
         private BluetoothLEAdvertisementWatcher _watcher;
 
-        public MetawearScanner()
+        public MetaWearScanner()
         {
-            _seenDeviceMacAddresses = new HashSet<ulong>();
+            ScanResults = new HashSet<ulong>();
 
             BluetoothLEManufacturerData manufacturerFilter = new BluetoothLEManufacturerData();
 
@@ -38,16 +38,6 @@ namespace mmrl_1_net_framework
             _watcher.Stop();
         }
 
-        public List<string> GetScanResults()
-        {
-            List<string> macAddresses = new List<string>();
-            foreach (var addressUl in _seenDeviceMacAddresses)
-            {
-                macAddresses.Add(MacUlongToString(addressUl));
-            }
-            return macAddresses;
-        }
-
         /// <summary>
         /// Converts a MAC address from ulong into a more readable colon-separated string.
         /// Example: (ulong)253022581560120 becomes (string)E6:1F:69:18:13:38
@@ -63,10 +53,10 @@ namespace mmrl_1_net_framework
         private void OnAdvertisementReceived(BluetoothLEAdvertisementWatcher watcher, BluetoothLEAdvertisementReceivedEventArgs eventArgs)
         {
             // Remember new BLE device only when it is a MetaWear board.
-            if (!_seenDeviceMacAddresses.Contains(eventArgs.BluetoothAddress) && eventArgs.Advertisement.ServiceUuids.Contains(Constants.METAWEAR_GATT_SERVICE))
+            if (!ScanResults.Contains(eventArgs.BluetoothAddress) && eventArgs.Advertisement.ServiceUuids.Contains(Constants.METAWEAR_GATT_SERVICE))
             {
-                _seenDeviceMacAddresses.Add(eventArgs.BluetoothAddress);
-                Console.WriteLine($"Found new device with MAC addres {MacUlongToString(eventArgs.BluetoothAddress)}.");
+                ScanResults.Add(eventArgs.BluetoothAddress);
+                Console.WriteLine($"Found new device with MAC address {MacUlongToString(eventArgs.BluetoothAddress)}.");
             }
         }
     }
