@@ -44,6 +44,14 @@ namespace mmrl_1_net_framework
                     Console.WriteLine("Successfully conected.");
                 }
 
+                /***** Calibrate sensor fusion *****/
+                // TODO
+
+                /***** Stream sensor fusion data *****/
+                Quaternion quaternion = new Quaternion(0, 0, 0, 0);
+                Console.WriteLine("Starting sensor fusion data stream... Press any key to stop!");
+                // TODO
+
                 /***** Stream acceleration data *****/
                 Acceleration accData = new Acceleration(0, 0, 0);
                 Console.WriteLine("Starting accelerometer data stream... Press x to stop!");
@@ -52,6 +60,9 @@ namespace mmrl_1_net_framework
                 Console.ReadKey();
                 boardsManager.StopAccelerometerStream(board);
                 Console.WriteLine("Stopped accelerometer.");
+
+                /***** Stream sensor fusion AND acceleration data in parallel *****/
+                // TODO
 
                 /***** Disconnect board *****/
                 Console.WriteLine("\nPress any key to disconnect again...");
