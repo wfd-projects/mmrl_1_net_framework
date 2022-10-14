@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using Windows.Devices.Bluetooth;
+using System.Linq;
 
 namespace mmrl_1_net_framework
 {
@@ -11,27 +12,29 @@ namespace mmrl_1_net_framework
     /// </summary>
     class MetaWearBoardsManager
     {
-        private Dictionary<ulong, IMetaWearBoard> _metaWearBoards;
+        /// <summary>
+        /// MAC addresses of the boards to which a connection already exists.
+        /// </summary>
+        public HashSet<ulong> ConnectedBoardsAddresses { get; private set; }
 
         // Minimum battery level in percent.
         private const byte BATTERY_LEVEL_MIN = 20;
 
         public MetaWearBoardsManager()
         {
-            _metaWearBoards = new Dictionary<ulong, IMetaWearBoard>();
+            ConnectedBoardsAddresses = new HashSet<ulong>();
         }
 
         /// <summary>
         /// Connects to and initialises a new MetaWear board.
         /// </summary>
         /// <param name="macAddress"></param>
-        /// <returns>Returns 0 if success, and -1 otherwise.</returns>
-        public async Task<int> ConnectToBoard(ulong macAddress)
+        /// <returns>Returns a reference to a MetaWear board, null otherwise.</returns>
+        public async Task<IMetaWearBoard> ConnectToBoard(ulong macAddress)
         {
-            int result = -1;
-            if (_metaWearBoards.ContainsKey(macAddress))
+            if (ConnectedBoardsAddresses.Contains(macAddress))
             {
-                Console.WriteLine($"INFO: There already exists a board with MAC address {MetaWearScanner.MacUlongToString(macAddress)}.");
+                Console.WriteLine($"INFO: Already connected to a board with MAC address {MetaWearScanner.MacUlongToString(macAddress)}.");
             }
             else
             {
@@ -50,8 +53,8 @@ namespace mmrl_1_net_framework
                         Console.WriteLine($"INFO: Battery level low! (MAC={MetaWearScanner.MacUlongToString(macAddress)}, Charge={batteryLevel}%)");
                     }
 
-                    _metaWearBoards.Add(macAddress, metaWearBoard);
-                    result = 0;
+                    ConnectedBoardsAddresses.Add(macAddress);
+                    return metaWearBoard;
                 }
                 catch (Exception e)
                 {
@@ -60,26 +63,26 @@ namespace mmrl_1_net_framework
                     Console.WriteLine($"       Reason: {e}");
                 }
             }
-            return result;
+            return null;
         }
 
         /// <summary>
-        /// Disconnects from a MetaWear board and removes it from this manager.
+        /// Disconnects a MetaWear board.
         /// </summary>
         /// <param name="macAddress"></param>
-        /// <returns>0 if the board could successfully be removed, -1 otherwise.</returns>
-        public int DisconnectBoard(ulong macAddress)
+        /// <returns>0 if the board could successfully be disconnected, -1 otherwise.</returns>
+        public int DisconnectBoard(IMetaWearBoard board)
         {
-            IMetaWearBoard board = null;
-            if (_metaWearBoards.TryGetValue(macAddress, out board))
+            ulong macAddress = MetaWearScanner.MacUlongFromString(board.MacAddress);
+            if (ConnectedBoardsAddresses.Contains(macAddress) || board.IsConnected)
             {
                 board.TearDown();
-                _metaWearBoards.Remove(macAddress);
+                ConnectedBoardsAddresses.Remove(macAddress);
                 return 0;
             }
             else
             {
-                Console.WriteLine($"ERROR: Could not disconnect MetaWear board with MAC address {MetaWearScanner.MacUlongToString(macAddress)}!");
+                Console.WriteLine($"ERROR: Could not disconnect MetaWear board with MAC address {board.MacAddress}!");
                 return -1;
             }
         }

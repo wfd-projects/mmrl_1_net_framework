@@ -36,13 +36,14 @@ namespace mmrl_1_net_framework
                 MetaWearBoardsManager boardsManager = new MetaWearBoardsManager();
                 var connectingTask = boardsManager.ConnectToBoard(firstBoardMac);
                 await connectingTask;
-                if (connectingTask.Result == 0)
+                var board = connectingTask.Result;
+                if (board != null)
                 {
                     Console.WriteLine("Successfully conected.");
                 }
                 Console.WriteLine("Wait some moments and then press any key to disconnect again...");
                 Console.ReadKey();
-                if(boardsManager.DisconnectBoard(firstBoardMac) == 0)
+                if(boardsManager.DisconnectBoard(board) == 0)
                 {
                     Console.WriteLine("Successfully disconnected.");
                 }

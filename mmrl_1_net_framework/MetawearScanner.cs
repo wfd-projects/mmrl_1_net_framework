@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using Windows.Devices.Bluetooth.Advertisement;
 using System.Linq;
+using System.Globalization;
 
 namespace mmrl_1_net_framework
 {
@@ -48,6 +49,16 @@ namespace mmrl_1_net_framework
         public static string MacUlongToString(ulong macAddress)
         {
             return string.Join(":", BitConverter.GetBytes(macAddress).Reverse().Select(b => b.ToString("X2"))).Substring(6);
+        }
+
+        /// <summary>
+		/// Convert a MAC address from its string representation to ulong.
+        /// Example: From (string)E6:1F:69:18:13:38 to (ulong)253022581560120
+		/// </summary>
+        /// <returns>MAC address in ulong type.</returns>
+		public static ulong MacUlongFromString(string macAddress)
+        {
+            return ulong.Parse(macAddress.Replace(":", ""), NumberStyles.HexNumber);
         }
 
         private void OnAdvertisementReceived(BluetoothLEAdvertisementWatcher watcher, BluetoothLEAdvertisementReceivedEventArgs eventArgs)
