@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Threading.Tasks;
 using System.Linq;
+using MbientLab.MetaWear.Data;
 
 namespace mmrl_1_net_framework
 {
@@ -28,9 +29,10 @@ namespace mmrl_1_net_framework
                 Console.WriteLine(MetaWearScanner.MacUlongToString(address));
             }
 
-            /***** Just connect to the first board found. *****/
             if(mwScanner.ScanResults.Count > 0)
             {
+                /***** Just connect to the first board found. *****/
+                Console.WriteLine("Trying to connect to a board...");
                 var firstBoardMac = mwScanner.ScanResults.First<ulong>();
 
                 MetaWearBoardsManager boardsManager = new MetaWearBoardsManager();
@@ -47,6 +49,15 @@ namespace mmrl_1_net_framework
                 {
                     Console.WriteLine("Successfully disconnected.");
                 }
+
+                /***** Stream acceleration data *****/
+                Acceleration accData = new Acceleration(0, 0, 0);
+                Console.WriteLine("Starting accelerometer data stream...");
+                await boardsManager.StartAccelerometerStream(board, accData);
+                Console.WriteLine("Press any key to stop the accelerometer.");
+                Console.ReadKey();
+                boardsManager.StopAccelerometerStream(board);
+                Console.WriteLine("Stopped accelerometer.");
             }
         }
     }
