@@ -25,11 +25,13 @@ namespace mmrl_1_net_framework
         /// Connects to and initialises a new MetaWear board.
         /// </summary>
         /// <param name="macAddress"></param>
-        public async Task ConnectToBoard(ulong macAddress)
+        /// <returns>Returns 0 if success, and -1 otherwise.</returns>
+        public async Task<int> ConnectToBoard(ulong macAddress)
         {
+            int result = -1;
             if (_metaWearBoards.ContainsKey(macAddress))
             {
-                Console.WriteLine($"INFO: There already exists a board with MAC address {macAddress}.");
+                Console.WriteLine($"INFO: There already exists a board with MAC address {MetaWearScanner.MacUlongToString(macAddress)}.");
             }
             else
             {
@@ -40,23 +42,25 @@ namespace mmrl_1_net_framework
                     await metaWearBoard.InitializeAsync();
 
                     // TODO: Assign method which tries to re-connect to the board x-times and only then aborts the process with an error message.
-                    metaWearBoard.OnUnexpectedDisconnect = () => Console.WriteLine($"Unexpectedly lost connection to board with MAC address {macAddress}!");
+                    metaWearBoard.OnUnexpectedDisconnect = () => Console.WriteLine($"Unexpectedly lost connection to board with MAC address {MetaWearScanner.MacUlongToString(macAddress)}!");
 
                     var batteryLevel = await metaWearBoard.ReadBatteryLevelAsync();
                     if (batteryLevel < BATTERY_LEVEL_MIN)
                     {
-                        Console.WriteLine($"INFO: Battery level low! (MAC={macAddress}, Charge={batteryLevel}%)");
+                        Console.WriteLine($"INFO: Battery level low! (MAC={MetaWearScanner.MacUlongToString(macAddress)}, Charge={batteryLevel}%)");
                     }
 
                     _metaWearBoards.Add(macAddress, metaWearBoard);
+                    result = 0;
                 }
                 catch (Exception e)
                 {
                     metaWearBoard.TearDown();
-                    Console.WriteLine($"ERROR: Could not connect to or initialise MetaWear board with MAC address {macAddress}!");
+                    Console.WriteLine($"ERROR: Could not connect to or initialise MetaWear board with MAC address {MetaWearScanner.MacUlongToString(macAddress)}!");
                     Console.WriteLine($"       Reason: {e}");
                 }
             }
+            return result;
         }
 
         /// <summary>
@@ -75,7 +79,7 @@ namespace mmrl_1_net_framework
             }
             else
             {
-                Console.WriteLine($"ERROR: Could not disconnect MetaWear board with MAC address {macAddress}!");
+                Console.WriteLine($"ERROR: Could not disconnect MetaWear board with MAC address {MetaWearScanner.MacUlongToString(macAddress)}!");
                 return -1;
             }
         }

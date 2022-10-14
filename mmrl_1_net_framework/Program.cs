@@ -29,13 +29,24 @@ namespace mmrl_1_net_framework
             }
 
             /***** Just connect to the first board found. *****/
-            var firstBoardMac = mwScanner.ScanResults.First<ulong>();
+            if(mwScanner.ScanResults.Count > 0)
+            {
+                var firstBoardMac = mwScanner.ScanResults.First<ulong>();
 
-            MetaWearBoardsManager boardsManager = new MetaWearBoardsManager();
-            await boardsManager.ConnectToBoard(firstBoardMac);
-            Console.WriteLine("Wait some moments and then press any key to disconnect again...");
-            Console.ReadKey();
-            boardsManager.DisconnectBoard(firstBoardMac);
+                MetaWearBoardsManager boardsManager = new MetaWearBoardsManager();
+                var connectingTask = boardsManager.ConnectToBoard(firstBoardMac);
+                await connectingTask;
+                if (connectingTask.Result == 0)
+                {
+                    Console.WriteLine("Successfully conected.");
+                }
+                Console.WriteLine("Wait some moments and then press any key to disconnect again...");
+                Console.ReadKey();
+                if(boardsManager.DisconnectBoard(firstBoardMac) == 0)
+                {
+                    Console.WriteLine("Successfully disconnected.");
+                }
+            }
         }
     }
 }
