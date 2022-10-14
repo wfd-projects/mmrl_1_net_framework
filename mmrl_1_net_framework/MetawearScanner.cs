@@ -9,10 +9,6 @@ namespace mmrl_1_net_framework
     class MetawearScanner
     {
         /// <summary>
-        /// Unique Bluetooth SIG company identifier: https://www.bluetooth.com/specifications/assigned-numbers/company-identifiers/
-        /// </summary>
-        private const ushort _companyId = 0x067E;
-        /// <summary>
         /// Devices which have already been encountered will be remembered and only listed once.
         /// </summary>
         private HashSet<ulong> _seenDeviceMacAddresses;
@@ -23,13 +19,11 @@ namespace mmrl_1_net_framework
             _seenDeviceMacAddresses = new HashSet<ulong>();
 
             BluetoothLEManufacturerData manufacturerFilter = new BluetoothLEManufacturerData();
-            manufacturerFilter.CompanyId = _companyId;
 
             _watcher = new BluetoothLEAdvertisementWatcher();
             _watcher.Received += OnAdvertisementReceived;
-            _watcher.AdvertisementFilter.Advertisement.ManufacturerData.Add(manufacturerFilter);
             // Actively scanning consumes more power but makes sure we receive scan response advertisements as well.
-            //_watcher.ScanningMode = BluetoothLEScanningMode.Active;
+            _watcher.ScanningMode = BluetoothLEScanningMode.Active;
         }
 
         public void StartScanning()
@@ -72,6 +66,7 @@ namespace mmrl_1_net_framework
             if (!_seenDeviceMacAddresses.Contains(eventArgs.BluetoothAddress) && eventArgs.Advertisement.ServiceUuids.Contains(Constants.METAWEAR_GATT_SERVICE))
             {
                 _seenDeviceMacAddresses.Add(eventArgs.BluetoothAddress);
+                Console.WriteLine($"Found new device with MAC addres {MacUlongToString(eventArgs.BluetoothAddress)}.");
             }
         }
     }

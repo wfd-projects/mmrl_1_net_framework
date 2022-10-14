@@ -8,10 +8,18 @@ namespace mmrl_1_net_framework
         {
             var mwScanner = new MetawearScanner();
             mwScanner.StartScanning();
-            Console.WriteLine("Press any key to stop scanning.");
+            Console.WriteLine("Press key x to stop scanning. Current scan results:");
+
+            char key;
+            do
+            {
+                key = Console.ReadKey().KeyChar;
+            } while (key != 'x');
+
+            Console.WriteLine("");
             mwScanner.StopScanning();
 
-            Console.WriteLine("Scan results:");
+            Console.WriteLine("Results:");
             var scanResults = mwScanner.GetScanResults();
             foreach (var address in scanResults)
             {
