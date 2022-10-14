@@ -22,6 +22,12 @@ namespace mmrl_1_net_framework
         /// </summary>
         public HashSet<ulong> ConnectedBoardsAddresses { get; private set; }
 
+        public enum AccelerometerSpeed
+        {
+            normal = 0,
+            fast = 1
+        }
+
         // Minimum battery level in percent.
         private const byte BATTERY_LEVEL_MIN = 20;
 
@@ -92,7 +98,7 @@ namespace mmrl_1_net_framework
             }
         }
 
-        public async Task StartAccelerometerStream(IMetaWearBoard board, Acceleration accData)
+        public async Task StartAccelerometerStream(IMetaWearBoard board, Acceleration accData, AccelerometerSpeed speed = AccelerometerSpeed.normal)
         {
             if (ConnectedBoardsAddresses.Contains(MetaWearScanner.MacUlongFromString(board.MacAddress)))
             {
@@ -105,14 +111,29 @@ namespace mmrl_1_net_framework
                 // Set output data rate to 25Hz, set range to +/-4g.
                 accelerometer.Configure(odr: OutputDataRate._25Hz, range: DataRange._4g);
 
-                await accelerometer.Acceleration.AddRouteAsync(source => source.Stream(data => {
-                    accData = data.Value<Acceleration>();
-                    Console.WriteLine("Acceleration = " + accData);
-                }
-                ));
+                // Accelerometer has a fast mode that combines 3 data samples into 1 BLE package increasing the data throughput by 3x.
+                if (speed == AccelerometerSpeed.fast)
+                {
+                    await accelerometer.PackedAcceleration.AddRouteAsync(source => source.Stream(data => {
+                            accData = data.Value<Acceleration>();
+                            Console.WriteLine("Acceleration = " + accData);
+                        }
+                    ));
 
-                // Start the acceleration data.
-                accelerometer.Acceleration.Start();
+                    // Start the acceleration data.
+                    accelerometer.PackedAcceleration.Start();
+                }
+                else
+                {
+                    await accelerometer.Acceleration.AddRouteAsync(source => source.Stream(data => {
+                            accData = data.Value<Acceleration>();
+                            Console.WriteLine("Acceleration = " + accData);
+                        }
+                    ));
+
+                    // Start the acceleration data.
+                    accelerometer.Acceleration.Start();
+                }
 
                 // Put accelerometer in active mode.
                 accelerometer.Start();

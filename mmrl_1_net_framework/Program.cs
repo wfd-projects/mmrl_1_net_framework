@@ -43,21 +43,23 @@ namespace mmrl_1_net_framework
                 {
                     Console.WriteLine("Successfully conected.");
                 }
-                Console.WriteLine("Wait some moments and then press any key to disconnect again...");
-                Console.ReadKey();
-                if(boardsManager.DisconnectBoard(board) == 0)
-                {
-                    Console.WriteLine("Successfully disconnected.");
-                }
 
                 /***** Stream acceleration data *****/
                 Acceleration accData = new Acceleration(0, 0, 0);
-                Console.WriteLine("Starting accelerometer data stream...");
+                Console.WriteLine("Starting accelerometer data stream... Press x to stop!");
                 await boardsManager.StartAccelerometerStream(board, accData);
                 Console.WriteLine("Press any key to stop the accelerometer.");
                 Console.ReadKey();
                 boardsManager.StopAccelerometerStream(board);
                 Console.WriteLine("Stopped accelerometer.");
+
+                /***** Disconnect board *****/
+                Console.WriteLine("\nPress any key to disconnect again...");
+                Console.ReadKey();
+                if (boardsManager.DisconnectBoard(board) == 0)
+                {
+                    Console.WriteLine("Successfully disconnected.");
+                }
             }
         }
     }
