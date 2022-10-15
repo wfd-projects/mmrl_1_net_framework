@@ -44,9 +44,9 @@ namespace mmrl_1_net_framework
         public static async Task ScenarioStreamFusion_double(MetaWearBoardsManager boardsManager, IMetaWearBoard board)
         {
             Console.WriteLine("\nStarting sensor fusion AND acceleration data stream... Press any key to stop!");
-            await boardsManager.StartFusion_double(board);
+            await boardsManager.StartSensorFusionAndAccelerometerStream(board);
             Console.ReadKey();
-            await boardsManager.StopFusion_double(board);
+            await boardsManager.StopSensorFusionAndAccelerometerStream(board);
             Console.WriteLine("Stopped sensor fusion.\n");
         }
 

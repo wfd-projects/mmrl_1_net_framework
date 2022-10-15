@@ -167,7 +167,7 @@ namespace mmrl_1_net_framework
         /// Test if sensor fusion and acceleration data can be streamed simultaneously.
         /// </summary>
         /// <param name="board"></param>
-        public async Task StartFusion_double(IMetaWearBoard board)
+        public async Task StartSensorFusionAndAccelerometerStream(IMetaWearBoard board)
         {
             board.GetModule<ISettings>()?.EditBleConnParams(maxConnInterval: 7.5f);
             await Task.Delay(1500);
@@ -206,7 +206,7 @@ namespace mmrl_1_net_framework
         /// Test if sensor fusion and acceleration data can be streamed simultaneously.
         /// </summary>
         /// <param name="board"></param>
-        public async Task StopFusion_double(IMetaWearBoard board)
+        public async Task StopSensorFusionAndAccelerometerStream(IMetaWearBoard board)
         {
             ISensorFusionBosch fusionModule = board.GetModule<ISensorFusionBosch>();
             fusionModule.Stop();
