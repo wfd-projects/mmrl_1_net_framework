@@ -9,6 +9,7 @@ using MbientLab.MetaWear.Sensor;
 using MbientLab.MetaWear.Core;
 using MbientLab.MetaWear.Sensor.AccelerometerBmi160;
 using MbientLab.MetaWear.Sensor.AccelerometerBosch;
+using MbientLab.MetaWear.Core.SensorFusionBosch;
 
 namespace mmrl_1_net_framework
 {
@@ -102,7 +103,7 @@ namespace mmrl_1_net_framework
         {
             if (ConnectedBoardsAddresses.Contains(MetaWearScanner.MacUlongFromString(board.MacAddress)))
             {
-                // Reduce the max BLE connection interval to 7.5ms so the BLE connection can handle the acceleroemter's sampling frequency.
+                // Reduce the max BLE connection interval to 7.5ms so the BLE connection can handle 100 Hz sampling frequency.
                 board.GetModule<ISettings>()?.EditBleConnParams(maxConnInterval: 7.5f);
                 await Task.Delay(1500);
 
@@ -160,6 +161,142 @@ namespace mmrl_1_net_framework
             {
                 Console.WriteLine($"ERROR: StopAccelerometerStream() could not find {board.MacAddress}!");
             }
+        }
+
+        /// <summary>
+        /// Test if sensor fusion and acceleration data can be streamed simultaneously.
+        /// </summary>
+        /// <param name="board"></param>
+        public async Task StartFusion_double(IMetaWearBoard board)
+        {
+            board.GetModule<ISettings>()?.EditBleConnParams(maxConnInterval: 7.5f);
+            await Task.Delay(1500);
+
+            ISensorFusionBosch fusionModule = board.GetModule<ISensorFusionBosch>();
+            if (fusionModule == null)
+            {
+                Console.WriteLine($"ERROR: Cannot connect to the sensor fusion module of board {board.MacAddress}!");
+                return;
+            }
+
+            // "Compass" runs the accelerometer only on 25 Hz which saves bandwitdh + trying to manually reduce it even further.
+            fusionModule.Configure(Mode.Compass, AccRange._2g, GyroRange._250dps, new object[] { OutputDataRate._12_5Hz, FilterMode.Osr2 });
+
+            await fusionModule.Quaternion.AddRouteAsync(source => source.Stream(data =>
+            {
+                Console.WriteLine($"Quaternion = {data.Value<Quaternion>()}");
+            }));
+            await Task.Delay(1500);
+
+            await fusionModule.LinearAcceleration.AddRouteAsync(source => source.Stream(data =>
+            {
+                Console.WriteLine($"Acceleration = {data.Value<Acceleration>()}");
+            }));
+            // Board needs some time for BLE communication.
+            await Task.Delay(1500);
+
+            fusionModule.Quaternion.Start();
+            await Task.Delay(500);
+            fusionModule.LinearAcceleration.Start();
+            await Task.Delay(500);
+            fusionModule.Start();
+        }
+
+        /// <summary>
+        /// Test if sensor fusion and acceleration data can be streamed simultaneously.
+        /// </summary>
+        /// <param name="board"></param>
+        public async Task StopFusion_double(IMetaWearBoard board)
+        {
+            ISensorFusionBosch fusionModule = board.GetModule<ISensorFusionBosch>();
+            fusionModule.Stop();
+            await Task.Delay(500);
+            fusionModule.Quaternion.Stop();
+            fusionModule.LinearAcceleration.Stop();
+        }
+
+        public async Task StartSensorFusionStream(IMetaWearBoard board, FusionData fusionData)
+        {
+            // Reduce the max BLE connection interval to 7.5ms so the BLE connection can handle 100 Hz sampling frequency.
+            board.GetModule<ISettings>()?.EditBleConnParams(maxConnInterval: 7.5f);
+            await Task.Delay(1500);
+
+            ISensorFusionBosch fusionModule = board.GetModule<ISensorFusionBosch>();
+            if(fusionModule == null || !ConnectedBoardsAddresses.Contains(MetaWearScanner.MacUlongFromString(board.MacAddress)))
+            {
+                Console.WriteLine($"ERROR: Cannot connect to the sensor fusion module of board {board.MacAddress}!");
+                return;
+            }
+
+            // Reason for IMUPlus mode: https://mbientlab.com/tutorials/SensorFusion.html#magnets-and-magnetometers
+            fusionModule.Configure(Mode.ImuPlus);
+
+            await fusionModule.Quaternion.AddRouteAsync(source => source.Stream(data =>
+            {
+                Console.WriteLine($"Quaternion = {data.Value<Quaternion>()}");
+                fusionData.Quaternion = data.Value<Quaternion>();
+            }));
+            // Board needs some time for BLE communication.
+            await Task.Delay(500);
+
+            var calibrationStateTask = fusionModule.ReadCalibrationStateAsync();
+            await calibrationStateTask;
+            // Magnetometer is NOT checked as we use IMUPlus mode which does not use the magnetometer.
+            if (calibrationStateTask.Result.accelerometer < CalibrationAccuracy.MediumAccuracy ||
+                calibrationStateTask.Result.gyroscope < CalibrationAccuracy.MediumAccuracy)
+            {
+                Console.WriteLine($"SensorFusion calibration necessary! Calibration states:");
+                Console.WriteLine($"Accelerometer: {CalibrationAccuracyToString(calibrationStateTask.Result.accelerometer)}");
+                Console.WriteLine($"Accelerometer: {CalibrationAccuracyToString(calibrationStateTask.Result.gyroscope)}");
+            }
+            fusionData.ImuCalibrationState = calibrationStateTask.Result;
+            // Board needs some time for BLE communication.
+            await Task.Delay(1500);
+
+            // Start data collection.
+            fusionModule.Quaternion.Start();
+
+            // Put sensor fusion module in active mode.
+            fusionModule.Start();
+        }
+
+        public void StopSensorFusionStream(IMetaWearBoard board)
+        {
+            if (ConnectedBoardsAddresses.Contains(MetaWearScanner.MacUlongFromString(board.MacAddress)))
+            {
+                ISensorFusionBosch fusionModule = board.GetModule<ISensorFusionBosch>();
+
+                // Put module back into standby mode.
+                fusionModule.Stop();
+
+                // Stop data collection.
+                fusionModule.Quaternion.Stop();
+            }
+            else
+            {
+                Console.WriteLine($"ERROR: StopSensorFusionStream() could not find {board.MacAddress}!");
+            }
+        }
+
+        private string CalibrationAccuracyToString(CalibrationAccuracy calibrationAccuracy)
+        {
+            string accuracy = "undefined";
+            switch (calibrationAccuracy)
+            {
+                case CalibrationAccuracy.HighAccuracy:
+                    accuracy = "high";
+                    break;
+                case CalibrationAccuracy.MediumAccuracy:
+                    accuracy = "medium";
+                    break;
+                case CalibrationAccuracy.LowAccuracy:
+                    accuracy = "low";
+                    break;
+                case CalibrationAccuracy.Unreliable:
+                    accuracy = "unreliable";
+                    break;
+            }
+            return accuracy;
         }
     }
 }

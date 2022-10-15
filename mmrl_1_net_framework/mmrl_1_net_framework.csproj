@@ -70,6 +70,7 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="FusionData.cs" />
     <Compile Include="MetaWearBoardsManager.cs" />
     <Compile Include="MetaWearScanner.cs" />
     <Compile Include="Program.cs" />
